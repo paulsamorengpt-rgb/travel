@@ -1,4 +1,4 @@
-import { Tour, User, Review } from '../types';
+import { Tour, User, Review, TourDate } from '../types';
 
 export const mockUsers: User[] = [
   {
@@ -27,18 +27,88 @@ export const mockUsers: User[] = [
   }
 ];
 
+const mockTourDates: { [tourId: string]: TourDate[] } = {
+  '1': [
+    {
+      id: '1-1',
+      startDate: '2024-06-15',
+      endDate: '2024-06-22',
+      maxParticipants: 8,
+      currentParticipants: 4,
+      price: 25000,
+      status: 'available'
+    },
+    {
+      id: '1-2',
+      startDate: '2024-07-20',
+      endDate: '2024-07-27',
+      maxParticipants: 8,
+      currentParticipants: 6,
+      price: 27000,
+      status: 'available'
+    },
+    {
+      id: '1-3',
+      startDate: '2024-08-10',
+      endDate: '2024-08-17',
+      maxParticipants: 8,
+      currentParticipants: 8,
+      price: 25000,
+      status: 'full'
+    }
+  ],
+  '2': [
+    {
+      id: '2-1',
+      startDate: '2024-07-10',
+      endDate: '2024-07-20',
+      maxParticipants: 12,
+      currentParticipants: 7,
+      price: 45000,
+      status: 'available'
+    },
+    {
+      id: '2-2',
+      startDate: '2024-08-15',
+      endDate: '2024-08-25',
+      maxParticipants: 12,
+      currentParticipants: 3,
+      price: 48000,
+      status: 'available'
+    }
+  ],
+  '3': [
+    {
+      id: '3-1',
+      startDate: '2024-02-14',
+      endDate: '2024-02-21',
+      maxParticipants: 10,
+      currentParticipants: 8,
+      price: 38000,
+      status: 'available'
+    },
+    {
+      id: '3-2',
+      startDate: '2024-03-10',
+      endDate: '2024-03-17',
+      maxParticipants: 10,
+      currentParticipants: 5,
+      price: 35000,
+      status: 'available'
+    }
+  ]
+};
+
 export const mockTours: Tour[] = [
   {
     id: '1',
     title: 'Поход в Карелию: озера и водопады',
     description: 'Незабываемое путешествие по красивейшим местам Карелии. Посетим живописные озера, мощные водопады и насладимся северной природой.',
     destination: 'Карелия, Россия',
-    startDate: '2024-06-15',
-    endDate: '2024-06-22',
+    dates: mockTourDates['1'],
     price: 25000,
     currency: 'RUB',
     maxParticipants: 8,
-    currentParticipants: 4,
     organizer: mockUsers[0],
     images: [
       'https://images.pexels.com/photos/417074/pexels-photo-417074.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -56,12 +126,10 @@ export const mockTours: Tour[] = [
     title: 'Исследование Алтая: горы и степи',
     description: 'Приключенческий тур по Горному Алтаю с посещением высокогорных озер, древних петроглифов и знакомством с местной культурой.',
     destination: 'Алтай, Россия',
-    startDate: '2024-07-10',
-    endDate: '2024-07-20',
+    dates: mockTourDates['2'],
     price: 45000,
     currency: 'RUB',
     maxParticipants: 12,
-    currentParticipants: 7,
     organizer: mockUsers[1],
     images: [
       'https://images.pexels.com/photos/1562058/pexels-photo-1562058.jpeg?auto=compress&cs=tinysrgb&w=800',
@@ -79,12 +147,10 @@ export const mockTours: Tour[] = [
     title: 'Байкал зимой: ледяная сказка',
     description: 'Уникальная возможность увидеть замерзшее озеро Байкал, прозрачный лед, ледяные гроты и северное сияние.',
     destination: 'Озеро Байкал, Россия',
-    startDate: '2024-02-14',
-    endDate: '2024-02-21',
+    dates: mockTourDates['3'],
     price: 38000,
     currency: 'RUB',
     maxParticipants: 10,
-    currentParticipants: 8,
     organizer: mockUsers[0],
     images: [
       'https://images.pexels.com/photos/1535162/pexels-photo-1535162.jpeg?auto=compress&cs=tinysrgb&w=800',

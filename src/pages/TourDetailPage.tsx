@@ -20,8 +20,10 @@ import {
   DollarSign,
   Info
 } from 'lucide-react';
-import { Tour, User } from '../types';
+import { Tour, User, BookingRequest } from '../types';
 import { useAuth } from '../context/AuthContext';
+import BookingModal from '../components/BookingModal';
+import PaymentModal from '../components/PaymentModal';
 
 interface TourDetailPageProps {
   tour: Tour;
@@ -34,6 +36,9 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinMessage, setJoinMessage] = useState('');
   const [showFullGallery, setShowFullGallery] = useState(false);
+  const [showBookingModal, setShowBookingModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [currentBooking, setCurrentBooking] = useState<BookingRequest | null>(null);
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
@@ -99,13 +104,19 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
       alert('Для участия в туре необходимо войти в аккаунт');
       return;
     }
-    setShowJoinModal(true);
+    setShowBookingModal(true);
   };
 
-  const submitJoinRequest = () => {
-    alert('Заявка на участие отправлена!');
-    setShowJoinModal(false);
-    setJoinMessage('');
+  const handleBookingComplete = (booking: BookingRequest) => {
+    setCurrentBooking(booking);
+    setShowBookingModal(false);
+    setShowPaymentModal(true);
+  };
+
+  const handlePaymentComplete = () => {
+    setShowPaymentModal(false);
+    setCurrentBooking(null);
+    alert('Бронирование успешно завершено! Организатор свяжется с вами в ближайшее время.');
   };
 
   const nextImage = () => {
@@ -116,7 +127,12 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
     setActiveImageIndex((prev) => (prev - 1 + tour.images.length) % tour.images.length);
   };
 
-  const tourDuration = Math.ceil((new Date(tour.endDate).getTime() - new Date(tour.startDate).getTime()) / (1000 * 60 * 60 * 24));
+  const getEarliestDate = () => tour.dates.find(date => date.status === 'available');
+  const earliestDate = getEarliestDate();
+  const tourDuration = earliestDate ? Math.ceil((new Date(earliestDate.endDate).getTime() - new Date(earliestDate.startDate).getTime()) / (1000 * 60 * 60 * 24)) : 0;
+  const availableDates = tour.dates.filter(date => date.status === 'available' && date.currentParticipants < date.maxParticipants);
+  const totalCurrentParticipants = tour.dates.reduce((sum, date) => sum + date.currentParticipants, 0);
+  const totalMaxParticipants = tour.dates.reduce((sum, date) => sum + date.maxParticipants, 0);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -234,7 +250,12 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
                     <div className="flex items-center">
                       <Calendar className="h-4 w-4 mr-1 text-green-500" />
                       <span>
-                        {new Date(tour.startDate).toLocaleDateString('ru-RU')} - {new Date(tour.endDate).toLocaleDateString('ru-RU')}
+                        {tour.dates.length > 1 
+                          ? `${tour.dates.length} дат доступно`
+                          : earliestDate 
+                            ? `${new Date(earliestDate.startDate).toLocaleDateString('ru-RU')} - ${new Date(earliestDate.endDate).toLocaleDateString('ru-RU')}`
+                            : 'Даты уточняются'
+                        }
                       </span>
                     </div>
                     <div className="flex items-center">
@@ -268,7 +289,7 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
                     <Users className="h-5 w-5 text-blue-500" />
                   </div>
                   <p className="text-sm text-gray-600">Участники</p>
-                  <p className="font-semibold">{tour.currentParticipants}/{tour.maxParticipants}</p>
+                  <p className="font-semibold">{totalCurrentParticipants}/{totalMaxParticipants}</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-1">
@@ -282,7 +303,7 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
                     <DollarSign className="h-5 w-5 text-orange-500" />
                   </div>
                   <p className="text-sm text-gray-600">Цена</p>
-                  <p className="font-semibold">{tour.price.toLocaleString()} ₽</p>
+                  <p className="font-semibold">от {Math.min(...tour.dates.map(d => d.price)).toLocaleString()} ₽</p>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-1">
@@ -291,6 +312,91 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
                   <p className="text-sm text-gray-600">Рейтинг</p>
                   <p className="font-semibold">{tour.organizer.rating}</p>
                 </div>
+              </div>
+            </div>
+
+            {/* Available Dates */}
+            <div className="bg-white rounded-2xl p-6 shadow-sm">
+              <h3 className="text-xl font-semibold text-gray-900 mb-6 flex items-center">
+                <Calendar className="h-5 w-5 mr-2 text-blue-500" />
+                Доступные даты
+              </h3>
+              <div className="space-y-4">
+                {tour.dates.map((date) => (
+                  <div
+                    key={date.id}
+                    className={`border rounded-xl p-4 ${
+                      date.status === 'available' && date.currentParticipants < date.maxParticipants
+                        ? 'border-green-200 bg-green-50'
+                        : date.status === 'full' || date.currentParticipants >= date.maxParticipants
+                        ? 'border-red-200 bg-red-50'
+                        : 'border-gray-200 bg-gray-50'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center mb-2">
+                          <span className="font-medium text-gray-900">
+                            {new Date(date.startDate).toLocaleDateString('ru-RU', {
+                              day: 'numeric',
+                              month: 'long'
+                            })} - {new Date(date.endDate).toLocaleDateString('ru-RU', {
+                              day: 'numeric',
+                              month: 'long',
+                              year: 'numeric'
+                            })}
+                          </span>
+                          <span className={`ml-3 px-2 py-1 rounded-full text-xs font-medium ${
+                            date.status === 'available' && date.currentParticipants < date.maxParticipants
+                              ? 'bg-green-100 text-green-800'
+                              : date.status === 'full' || date.currentParticipants >= date.maxParticipants
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {date.status === 'available' && date.currentParticipants < date.maxParticipants
+                              ? 'Доступно'
+                              : date.status === 'full' || date.currentParticipants >= date.maxParticipants
+                              ? 'Мест нет'
+                              : 'Отменено'
+                            }
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-4 text-sm text-gray-600">
+                          <span>
+                            {Math.ceil((new Date(date.endDate).getTime() - new Date(date.startDate).getTime()) / (1000 * 60 * 60 * 24))} дней
+                          </span>
+                          <div className="flex items-center">
+                            <Users className="h-4 w-4 mr-1" />
+                            <span>{date.currentParticipants}/{date.maxParticipants} мест</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-lg font-bold text-gray-900">
+                          {date.price.toLocaleString()} ₽
+                        </p>
+                        <p className="text-sm text-gray-500">за человека</p>
+                      </div>
+                    </div>
+                    
+                    {/* Progress bar */}
+                    <div className="mt-3">
+                      <div className="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Заполненность</span>
+                        <span>{Math.round((date.currentParticipants / date.maxParticipants) * 100)}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div
+                          className={`h-2 rounded-full ${
+                            date.currentParticipants / date.maxParticipants > 0.8 ? 'bg-red-500' :
+                            date.currentParticipants / date.maxParticipants > 0.6 ? 'bg-yellow-500' : 'bg-green-500'
+                          }`}
+                          style={{ width: `${(date.currentParticipants / date.maxParticipants) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -465,7 +571,7 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-600">Свободных мест:</span>
                     <span className="font-semibold text-green-600">
-                      {tour.maxParticipants - tour.currentParticipants}
+                      {totalMaxParticipants - totalCurrentParticipants}
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
@@ -475,7 +581,7 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
                   <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                     <span className="text-gray-600">Начало тура:</span>
                     <span className="font-semibold">
-                      {new Date(tour.startDate).toLocaleDateString('ru-RU')}
+                      {earliestDate ? new Date(earliestDate.startDate).toLocaleDateString('ru-RU') : 'Уточняется'}
                     </span>
                   </div>
                 </div>
@@ -483,10 +589,10 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
                 <div className="space-y-3">
                   <button
                     onClick={handleJoinTour}
-                    disabled={tour.currentParticipants >= tour.maxParticipants}
+                    disabled={availableDates.length === 0}
                     className="w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                   >
-                    {tour.currentParticipants >= tour.maxParticipants ? 'Мест нет' : 'Присоединиться к туру'}
+                    {availableDates.length === 0 ? 'Мест нет' : 'Забронировать место'}
                   </button>
                   
                   <button className="w-full border border-gray-300 text-gray-700 py-3 rounded-xl font-medium hover:bg-gray-50 transition-colors">
@@ -577,46 +683,22 @@ const TourDetailPage: React.FC<TourDetailPageProps> = ({ tour, onBack }) => {
         </div>
       )}
 
-      {/* Join Modal */}
-      {showJoinModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 relative">
-            <button
-              onClick={() => setShowJoinModal(false)}
-              className="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-            
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              Заявка на участие
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Расскажите организатору о себе и почему хотите присоединиться к этому туру.
-            </p>
-            <textarea
-              value={joinMessage}
-              onChange={(e) => setJoinMessage(e.target.value)}
-              placeholder="Ваше сообщение..."
-              rows={4}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mb-4 resize-none"
-            />
-            <div className="flex space-x-3">
-              <button
-                onClick={() => setShowJoinModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Отмена
-              </button>
-              <button
-                onClick={submitJoinRequest}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Отправить заявку
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Booking Modal */}
+      <BookingModal
+        tour={tour}
+        isOpen={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+        onBookingComplete={handleBookingComplete}
+      />
+
+      {/* Payment Modal */}
+      {currentBooking && (
+        <PaymentModal
+          booking={currentBooking}
+          isOpen={showPaymentModal}
+          onClose={() => setShowPaymentModal(false)}
+          onPaymentComplete={handlePaymentComplete}
+        />
       )}
     </div>
   );

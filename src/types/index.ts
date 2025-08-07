@@ -16,12 +16,10 @@ export interface Tour {
   title: string;
   description: string;
   destination: string;
-  startDate: string;
-  endDate: string;
+  dates: TourDate[];
   price: number;
   currency: string;
   maxParticipants: number;
-  currentParticipants: number;
   organizer: User;
   images: string[];
   tags: string[];
@@ -30,6 +28,45 @@ export interface Tour {
   accommodation: string[];
   meals: boolean;
   createdAt: string;
+}
+
+export interface TourDate {
+  id: string;
+  startDate: string;
+  endDate: string;
+  maxParticipants: number;
+  currentParticipants: number;
+  price: number;
+  status: 'available' | 'full' | 'cancelled';
+}
+
+export interface BookingRequest {
+  tourId: string;
+  tourDateId: string;
+  participantsCount: number;
+  totalPrice: number;
+  contactInfo: {
+    phone: string;
+    emergencyContact: string;
+    specialRequests?: string;
+  };
+}
+
+export interface Booking {
+  id: string;
+  tourId: string;
+  tourDateId: string;
+  userId: string;
+  participantsCount: number;
+  totalPrice: number;
+  status: 'pending' | 'confirmed' | 'paid' | 'cancelled';
+  contactInfo: {
+    phone: string;
+    emergencyContact: string;
+    specialRequests?: string;
+  };
+  createdAt: string;
+  paymentDeadline: string;
 }
 
 export interface Review {

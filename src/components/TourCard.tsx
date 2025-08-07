@@ -62,7 +62,12 @@ const TourCard: React.FC<TourCardProps> = ({ tour, onTourClick }) => {
         
         <div className="flex items-center text-sm text-gray-600 mb-3">
           <Calendar className="h-4 w-4 mr-1" />
-          <span>{new Date(tour.startDate).toLocaleDateString('ru-RU')} - {new Date(tour.endDate).toLocaleDateString('ru-RU')}</span>
+          <span>
+            {tour.dates.length > 1 
+              ? `${tour.dates.length} дат доступно`
+              : `${new Date(tour.dates[0].startDate).toLocaleDateString('ru-RU')} - ${new Date(tour.dates[0].endDate).toLocaleDateString('ru-RU')}`
+            }
+          </span>
         </div>
         
         <div className="flex items-center justify-between mb-3">
@@ -85,11 +90,14 @@ const TourCard: React.FC<TourCardProps> = ({ tour, onTourClick }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center text-sm text-gray-600">
             <Users className="h-4 w-4 mr-1" />
-            <span>{tour.currentParticipants}/{tour.maxParticipants}</span>
+            <span>
+              {tour.dates.reduce((sum, date) => sum + date.currentParticipants, 0)}/
+              {tour.dates.reduce((sum, date) => sum + date.maxParticipants, 0)} мест
+            </span>
           </div>
           <div className="text-right">
             <p className="text-lg font-bold text-gray-900">
-              {tour.price.toLocaleString()} ₽
+              от {Math.min(...tour.dates.map(d => d.price)).toLocaleString()} ₽
             </p>
             <p className="text-xs text-gray-500">на человека</p>
           </div>
